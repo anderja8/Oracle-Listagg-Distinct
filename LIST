@@ -1,0 +1,21 @@
+create or replace TYPE LISTAGG_DISTINCT_TYPE
+  AS OBJECT (
+    v_result VARCHAR2(4000);
+    
+    STATIC FUNCTION odciaggregateinitialize(ctx IN OUT LISTAGG_DISTINCT_TYPE)
+        RETURN NUMBER,
+        
+    MEMBER FUNCTION odciaggregateiterate(self IN OUT LISTAGG_DISTINCT_TYPE, p_string IN VARCHAR2)
+        RETURN NUMBER,
+        
+    MEMBER FUNCTION odciaggregatemerge(self IN OUT LISTAGG_DISTINCT_TYPE, ctx2 IN LISTAGG_DISTINCT_TYPE)
+        RETURN NUMBER,
+        
+    MEMBER FUNCTION odciaggregateterminate(
+                                           self IN LISTAGG_DISTINCT_TYPE,
+                                           returnvalue OUT VARCHAR2,
+                                           flags IN NUMBER
+                                          )
+        RETURN NUMBER
+
+);
