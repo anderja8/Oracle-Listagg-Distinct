@@ -1,21 +1,47 @@
-create or replace TYPE LISTAGG_DISTINCT_TYPE
-  AS OBJECT (
-    v_result VARCHAR2(4000);
-    
-    STATIC FUNCTION odciaggregateinitialize(ctx IN OUT LISTAGG_DISTINCT_TYPE)
-        RETURN NUMBER,
-        
-    MEMBER FUNCTION odciaggregateiterate(self IN OUT LISTAGG_DISTINCT_TYPE, p_string IN VARCHAR2)
-        RETURN NUMBER,
-        
-    MEMBER FUNCTION odciaggregatemerge(self IN OUT LISTAGG_DISTINCT_TYPE, ctx2 IN LISTAGG_DISTINCT_TYPE)
-        RETURN NUMBER,
-        
-    MEMBER FUNCTION odciaggregateterminate(
-                                           self IN LISTAGG_DISTINCT_TYPE,
-                                           returnvalue OUT VARCHAR2,
-                                           flags IN NUMBER
-                                          )
-        RETURN NUMBER
+create or replace TYPE BODY LISTAGG_DISTINCT_TYPE IS
 
-);
+    STATIC FUNCTION odciaggregateinitialize(ctx IN OUT LISTAGG_DISTINCT_TYPE)
+    RETURN NUMBER
+    IS
+    BEGIN
+        ctx  := LISTAGG_DISTINCT_TYPE(NULL);  -- initialize the concatenation to NULL
+        RETURN odciconst.success;
+    END odciaggregateinitialize;
+    
+    
+    MEMBER FUNCTION odciaggregateiterate(self IN OUT LISTAGG_DISTINCT_TYPE, p_string IN VARCHAR2)
+        RETURN NUMBER
+    IS
+    BEGIN
+        if instr(self.v_result, p_string) > 0 or (length(self.v_result) +length(p_string) + 2) > 3999 then
+            RETURN odciconst.success;
+        else
+            self.v_result  := self.v_result || ', ' || p_string;   -- Append a comma delimiter and new value
+            RETURN odciconst.success;
+        end if;
+    END odciaggregateiterate;
+    
+    
+    MEMBER FUNCTION odciaggregatemerge(self IN OUT CONCAT_DISTINCT_AGG_TYPE_TWO, ctx2 IN CONCAT_DISTINCT_AGG_TYPE_TWO)
+        RETURN NUMBER
+    IS
+    BEGIN
+        self.v_result  := self.v_result || ctx2.v_result;
+        RETURN odciconst.success;
+    END odciaggregatemerge;
+
+
+    MEMBER FUNCTION odciaggregateterminate(
+        self          IN    CONCAT_DISTINCT_AGG_TYPE_TWO,
+        returnvalue   OUT   VARCHAR2,
+        flags         IN    NUMBER
+    )
+        RETURN NUMBER
+    IS
+    BEGIN
+        -- Since we prefix the string initially with a comma, remove the extra here before returning
+        returnvalue  := LTRIM(self.v_result, ', ');
+        RETURN odciconst.success;
+    END odciaggregateterminate;
+    
+END;
